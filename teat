@@ -1,0 +1,54 @@
+--// AUTO RELOAD FÜR AMMO-WAFFEN //--
+
+local Players          = game:GetService("Players")
+local RunService       = game:GetService("RunService")
+local VirtualInput     = game:GetService("VirtualInputManager")
+
+local lp = Players.LocalPlayer
+
+local function pressR()
+    pcall(function()
+        VirtualInput:SendKeyEvent(true, Enum.KeyCode.R, false, game)
+        task.wait(0.03)
+        VirtualInput:SendKeyEvent(false, Enum.KeyCode.R, false, game)
+    end)
+end
+
+local function getEquippedGun()
+    local char = lp.Character
+    if not char then return nil, nil end
+
+    for _, inst in ipairs(char:GetChildren()) do
+        if inst:IsA("Tool") then
+            local ammo = inst:FindFirstChild("AMMO")
+            if ammo and ammo:IsA("ValueBase") then
+                return inst, ammo
+            end
+        end
+    end
+    return nil, nil
+end
+
+local currentTool, ammoVal
+local lastReload = 0
+
+RunService.Heartbeat:Connect(function()
+    local char = lp.Character
+    if not char then return end
+
+    -- Tool/Ammo aktualisieren
+    if (not currentTool) or currentTool.Parent ~= char or not ammoVal or not ammoVal.Parent then
+        currentTool, ammoVal = getEquippedGun()
+    end
+
+    if currentTool and ammoVal then
+        local v = tonumber(ammoVal.Value)
+        if v and v <= 0 then
+            local now = tick()
+            if now - lastReload > 0.25 then
+                lastReload = now
+                pressR()
+            end
+        end
+    end
+end)
